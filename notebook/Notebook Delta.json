@@ -1,0 +1,399 @@
+{
+	"name": "Notebook Delta",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "sparkhrbyzaq",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "88f0f40a-9038-45eb-ba79-c4057d674501"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/6c7d993d-259c-4e7d-942f-9c2fe086a6c7/resourceGroups/dp000-hrbyzaq/providers/Microsoft.Synapse/workspaces/synapsehrbyzaq/bigDataPools/sparkhrbyzaq",
+				"name": "sparkhrbyzaq",
+				"type": "Spark",
+				"endpoint": "https://synapsehrbyzaq.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sparkhrbyzaq",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.1",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"import random\r\n",
+					"\r\n",
+					"session_id = random.randint(0,1000000)\r\n",
+					"delta_table_path = \"/delta/delta-table-{0}\".format(session_id)\r\n",
+					"\r\n",
+					"delta_table_path"
+				],
+				"execution_count": 60
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"The code that follows shows you how to create a new Delta Lake table using the schema inferred from your DataFrame."
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"data = spark.range(0,5)\r\n",
+					"data.show()\r\n",
+					"data.write.format(\"delta\").save(delta_table_path)"
+				],
+				"execution_count": 61
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"You read data in your Delta Lake table by specifying the path to the files and the delta format."
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"df = spark.read.format(\"delta\").load(delta_table_path)\r\n",
+					"df.show()"
+				],
+				"execution_count": 62
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Update table "
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"data = spark.range(5,10)\r\n",
+					"data.write.format(\"delta\").mode(\"overwrite\").save(delta_table_path)\r\n",
+					"df.show()"
+				],
+				"execution_count": 63
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"Save as catalog tables\r\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"data.write.format(\"delta\").saveAsTable(\"ManagedDeltaTable\")\r\n",
+					"spark.sql(\"CREATE TABLE ExternalDeltaTable USING DELTA LOCATION '{0}'\".format(delta_table_path))\r\n",
+					"spark.sql(\"SHOW TABLES\").show()"
+				],
+				"execution_count": 64
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"spark.sql(\"DESCRIBE EXTENDED ManagedDeltaTable\").show(truncate=False)"
+				],
+				"execution_count": 65
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"from delta.tables import *\r\n",
+					"from pyspark.sql.functions import *\r\n",
+					"\r\n",
+					"delta_table = DeltaTable.forPath(spark, delta_table_path)\r\n",
+					"\r\n",
+					"delta_table.update(\r\n",
+					"  condition = expr(\"id % 2 == 0\"),\r\n",
+					"  set = { \"id\": expr(\"id + 100\") })\r\n",
+					"delta_table.toDF().show()"
+				],
+				"execution_count": 66
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"delta_table.delete(\"id % 2 == 0\")\r\n",
+					"delta_table.toDF().show()"
+				],
+				"execution_count": 67
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"new_data = spark.range(0,20).alias(\"newData\")\r\n",
+					"\r\n",
+					"delta_table.alias(\"oldData\")\\\r\n",
+					"    .merge(new_data.alias(\"newData\"), \"oldData.id = newData.id\")\\\r\n",
+					"    .whenMatchedUpdate(set = { \"id\": lit(\"-1\")})\\\r\n",
+					"    .whenNotMatchedInsert(values = { \"id\": col(\"newData.id\") })\\\r\n",
+					"    .execute()\r\n",
+					"\r\n",
+					"delta_table.toDF().show(100)"
+				],
+				"execution_count": 68
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"delta_table.history().show(20, 1000, False)"
+				],
+				"execution_count": 69
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"df = spark.read.format(\"delta\").option(\"versionAsOf\", 0).load(delta_table_path)\r\n",
+					"df.show()"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"parquet_path = \"/parquet/parquet-table-{0}\".format(session_id)\r\n",
+					"data = spark.range(0,5)\r\n",
+					"data.write.parquet(parquet_path)\r\n",
+					"DeltaTable.isDeltaTable(spark, parquet_path)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"SQL SPARK"
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"spark.sql(\"DESCRIBE HISTORY delta.`{0}`\".format(delta_table_path)).show()"
+				],
+				"execution_count": 70
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"parquet_id = random.randint(0,1000)\r\n",
+					"parquet_path = \"/parquet/parquet-table-{0}-{1}\".format(session_id, parquet_id)\r\n",
+					"data = spark.range(0,5)\r\n",
+					"data.write.parquet(parquet_path)\r\n",
+					"DeltaTable.isDeltaTable(spark, parquet_path)\r\n",
+					"spark.sql(\"CONVERT TO DELTA parquet.`{0}`\".format(parquet_path))\r\n",
+					"DeltaTable.isDeltaTable(spark, parquet_path)"
+				],
+				"execution_count": 71
+			}
+		]
+	}
+}
