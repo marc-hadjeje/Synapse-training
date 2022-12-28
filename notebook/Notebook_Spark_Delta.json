@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "9bdbfb25-7c7d-43f4-9179-270c6ad09e76"
+				"spark.autotune.trackingId": "0feff2dc-b62b-4715-9149-f320c07b56d7"
 			}
 		},
 		"metadata": {
@@ -336,6 +336,140 @@
 					" {\"device\":\"Dev1\",\"status\":\"ok\"}'''\r\n",
 					" mssparkutils.fs.put(inputPath + \"data.txt\", device_data, True)\r\n",
 					" print(\"Source stream created...\")"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					" # Write the stream to a delta table\r\n",
+					" delta_stream_table_path = '/delta/iotdevicedata'\r\n",
+					" checkpointpath = '/delta/checkpoint'\r\n",
+					" deltastream = iotstream.writeStream.format(\"delta\").option(\"checkpointLocation\", checkpointpath).start(delta_stream_table_path)\r\n",
+					" print(\"Streaming to delta sink...\")"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					" # Read the data in delta format into a dataframe\r\n",
+					" df = spark.read.format(\"delta\").load(delta_stream_table_path)\r\n",
+					" display(df)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					" # create a catalog table based on the streaming sink\r\n",
+					" spark.sql(\"CREATE TABLE IotDeviceData USING DELTA LOCATION '{0}'\".format(delta_stream_table_path))"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					},
+					"microsoft": {
+						"language": "sparksql"
+					}
+				},
+				"source": [
+					" %%sql\r\n",
+					"\r\n",
+					" SELECT * FROM IotDeviceData;"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					" # Add more data to the source stream\r\n",
+					" more_data = '''{\"device\":\"Dev1\",\"status\":\"ok\"}\r\n",
+					" {\"device\":\"Dev1\",\"status\":\"ok\"}\r\n",
+					" {\"device\":\"Dev1\",\"status\":\"ok\"}\r\n",
+					" {\"device\":\"Dev1\",\"status\":\"ok\"}\r\n",
+					" {\"device\":\"Dev1\",\"status\":\"error\"}\r\n",
+					" {\"device\":\"Dev2\",\"status\":\"error\"}\r\n",
+					" {\"device\":\"Dev1\",\"status\":\"ok\"}'''\r\n",
+					"\r\n",
+					" mssparkutils.fs.put(inputPath + \"more-data.txt\", more_data, True)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					},
+					"microsoft": {
+						"language": "sparksql"
+					}
+				},
+				"source": [
+					" %%sql\r\n",
+					"\r\n",
+					" SELECT * FROM IotDeviceData;"
 				],
 				"execution_count": null
 			}
