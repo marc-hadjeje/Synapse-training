@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "0feff2dc-b62b-4715-9149-f320c07b56d7"
+				"spark.autotune.trackingId": "c561f789-5989-4f7a-b9d1-150175b0afbb"
 			}
 		},
 		"metadata": {
@@ -309,35 +309,35 @@
 					}
 				},
 				"source": [
-					" from notebookutils import mssparkutils\r\n",
-					" from pyspark.sql.types import *\r\n",
-					" from pyspark.sql.functions import *\r\n",
+					"from notebookutils import mssparkutils\r\n",
+					"from pyspark.sql.types import *\r\n",
+					"from pyspark.sql.functions import *\r\n",
 					"\r\n",
-					" # Create a folder\r\n",
-					" inputPath = '/data/'\r\n",
-					" mssparkutils.fs.mkdirs(inputPath)\r\n",
+					"# Create a folder\r\n",
+					"inputPath = '/data/'\r\n",
+					"mssparkutils.fs.mkdirs(inputPath)\r\n",
 					"\r\n",
-					" # Create a stream that reads data from the folder, using a JSON schema\r\n",
-					" jsonSchema = StructType([\r\n",
-					" StructField(\"device\", StringType(), False),\r\n",
-					" StructField(\"status\", StringType(), False)\r\n",
-					" ])\r\n",
-					" iotstream = spark.readStream.schema(jsonSchema).option(\"maxFilesPerTrigger\", 1).json(inputPath)\r\n",
+					"# Create a stream that reads data from the folder, using a JSON schema\r\n",
+					"jsonSchema = StructType([\r\n",
+					"StructField(\"device\", StringType(), False),\r\n",
+					"StructField(\"status\", StringType(), False)\r\n",
+					"])\r\n",
+					"iotstream = spark.readStream.schema(jsonSchema).option(\"maxFilesPerTrigger\", 1).json(inputPath)\r\n",
 					"\r\n",
-					" # Write some event data to the folder\r\n",
-					" device_data = '''{\"device\":\"Dev1\",\"status\":\"ok\"}\r\n",
-					" {\"device\":\"Dev1\",\"status\":\"ok\"}\r\n",
-					" {\"device\":\"Dev1\",\"status\":\"ok\"}\r\n",
-					" {\"device\":\"Dev2\",\"status\":\"error\"}\r\n",
-					" {\"device\":\"Dev1\",\"status\":\"ok\"}\r\n",
-					" {\"device\":\"Dev1\",\"status\":\"error\"}\r\n",
-					" {\"device\":\"Dev2\",\"status\":\"ok\"}\r\n",
-					" {\"device\":\"Dev2\",\"status\":\"error\"}\r\n",
-					" {\"device\":\"Dev1\",\"status\":\"ok\"}'''\r\n",
-					" mssparkutils.fs.put(inputPath + \"data.txt\", device_data, True)\r\n",
-					" print(\"Source stream created...\")"
+					"# Write some event data to the folder\r\n",
+					"device_data = '''{\"device\":\"Dev1\",\"status\":\"ok\"}\r\n",
+					"{\"device\":\"Dev1\",\"status\":\"ok\"}\r\n",
+					"{\"device\":\"Dev1\",\"status\":\"ok\"}\r\n",
+					"{\"device\":\"Dev2\",\"status\":\"error\"}\r\n",
+					"{\"device\":\"Dev1\",\"status\":\"ok\"}\r\n",
+					"{\"device\":\"Dev1\",\"status\":\"error\"}\r\n",
+					"{\"device\":\"Dev2\",\"status\":\"ok\"}\r\n",
+					"{\"device\":\"Dev2\",\"status\":\"error\"}\r\n",
+					"{\"device\":\"Dev1\",\"status\":\"ok\"}'''\r\n",
+					"mssparkutils.fs.put(inputPath + \"data.txt\", device_data, True)\r\n",
+					"print(\"Source stream created...\")"
 				],
-				"execution_count": null
+				"execution_count": 20
 			},
 			{
 				"cell_type": "code",
@@ -354,12 +354,33 @@
 				},
 				"source": [
 					" # Write the stream to a delta table\r\n",
-					" delta_stream_table_path = '/delta/iotdevicedata'\r\n",
-					" checkpointpath = '/delta/checkpoint'\r\n",
-					" deltastream = iotstream.writeStream.format(\"delta\").option(\"checkpointLocation\", checkpointpath).start(delta_stream_table_path)\r\n",
-					" print(\"Streaming to delta sink...\")"
+					"delta_stream_table_path = '/delta/iotdevicedata'\r\n",
+					"checkpointpath = '/delta/checkpoint'\r\n",
+					"deltastream = iotstream.writeStream.format(\"delta\").option(\"checkpointLocation\", checkpointpath).start(delta_stream_table_path)\r\n",
+					"print(\"Streaming to delta sink...\")"
 				],
-				"execution_count": null
+				"execution_count": 21
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					},
+					"collapsed": false
+				},
+				"source": [
+					"# Read the data in delta format into a dataframe\r\n",
+					"df = spark.read.format(\"delta\").load(delta_stream_table_path)\r\n",
+					"display(df)"
+				],
+				"execution_count": 22
 			},
 			{
 				"cell_type": "code",
@@ -375,30 +396,10 @@
 					}
 				},
 				"source": [
-					" # Read the data in delta format into a dataframe\r\n",
-					" df = spark.read.format(\"delta\").load(delta_stream_table_path)\r\n",
-					" display(df)"
+					"# create a catalog table based on the streaming sink\r\n",
+					"spark.sql(\"CREATE TABLE IotDeviceData USING DELTA LOCATION '{0}'\".format(delta_stream_table_path))"
 				],
-				"execution_count": null
-			},
-			{
-				"cell_type": "code",
-				"metadata": {
-					"jupyter": {
-						"source_hidden": false,
-						"outputs_hidden": false
-					},
-					"nteract": {
-						"transient": {
-							"deleting": false
-						}
-					}
-				},
-				"source": [
-					" # create a catalog table based on the streaming sink\r\n",
-					" spark.sql(\"CREATE TABLE IotDeviceData USING DELTA LOCATION '{0}'\".format(delta_stream_table_path))"
-				],
-				"execution_count": null
+				"execution_count": 24
 			},
 			{
 				"cell_type": "code",
@@ -448,7 +449,7 @@
 					"\r\n",
 					" mssparkutils.fs.put(inputPath + \"more-data.txt\", more_data, True)"
 				],
-				"execution_count": null
+				"execution_count": 25
 			},
 			{
 				"cell_type": "code",
@@ -464,14 +465,33 @@
 					},
 					"microsoft": {
 						"language": "sparksql"
-					}
+					},
+					"collapsed": false
 				},
 				"source": [
 					" %%sql\r\n",
 					"\r\n",
 					" SELECT * FROM IotDeviceData;"
 				],
-				"execution_count": null
+				"execution_count": 26
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					" deltastream.stop()"
+				],
+				"execution_count": 27
 			}
 		]
 	}
