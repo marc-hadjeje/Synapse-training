@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "58443ab0-e73a-4531-9812-ad7bf500a3aa"
+				"spark.autotune.trackingId": "2cfb19e8-36b9-4503-84f6-a16266313928"
 			}
 		},
 		"metadata": {
@@ -135,6 +135,44 @@
 					" new_df.show(10)"
 				],
 				"execution_count": 23
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					" deltaTable.history(10).show(20, False, True)"
+				],
+				"execution_count": 24
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					" spark.sql(\"CREATE DATABASE AdventureWorks\")\r\n",
+					" spark.sql(\"CREATE TABLE AdventureWorks.ProductsExternal USING DELTA LOCATION '{0}'\".format(delta_table_path))\r\n",
+					" spark.sql(\"DESCRIBE EXTENDED AdventureWorks.ProductsExternal\").show(truncate=False)"
+				],
+				"execution_count": 25
 			}
 		]
 	}
