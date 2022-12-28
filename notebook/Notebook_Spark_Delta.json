@@ -1,5 +1,5 @@
 {
-	"name": "Notebook 1",
+	"name": "Notebook_Spark_Delta",
 	"properties": {
 		"nbformat": 4,
 		"nbformat_minor": 2,
@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "a2334123-5b33-45c1-99bb-7f7a4bb76a86"
+				"spark.autotune.trackingId": "58443ab0-e73a-4531-9812-ad7bf500a3aa"
 			}
 		},
 		"metadata": {
@@ -60,12 +60,81 @@
 					"%%pyspark\r\n",
 					"df = spark.read.load('abfss://files@datalakehrbyzaq.dfs.core.windows.net/products/products.csv', format='csv'\r\n",
 					"## If header exists uncomment line below\r\n",
-					"##, header=True\r\n",
+					", header=True\r\n",
 					")\r\n",
 					"display(df.limit(10))\r\n",
-					""
+					"\r\n",
+					"\r\n",
+					"delta_table_path = \"/delta/products-delta\"\r\n",
+					"df.write.format(\"delta\").save(delta_table_path)"
 				],
-				"execution_count": 2
+				"execution_count": 17
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					" delta_table_path = \"/delta/products-delta\"\r\n",
+					" df.write.format(\"delta\").save(delta_table_path)"
+				],
+				"execution_count": 21
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"from delta.tables import *\r\n",
+					"from pyspark.sql.functions import *\r\n",
+					"\r\n",
+					"# Create a deltaTable object\r\n",
+					"deltaTable = DeltaTable.forPath(spark, delta_table_path)\r\n",
+					"\r\n",
+					"# Update the table (reduce price of product 771 by 10%)\r\n",
+					"deltaTable.update(condition = \"ProductID == 771\",set = { \"ListPrice\": \"ListPrice * 0.9\" })\r\n",
+					"\r\n",
+					"# View the updated data as a dataframe\r\n",
+					"deltaTable.toDF().show(10)"
+				],
+				"execution_count": 22
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					" new_df = spark.read.format(\"delta\").option(\"versionAsOf\", 0).load(delta_table_path)\r\n",
+					" new_df.show(10)"
+				],
+				"execution_count": 23
 			}
 		]
 	}
